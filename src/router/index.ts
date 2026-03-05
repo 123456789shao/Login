@@ -1,10 +1,11 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
-import AdminView from '../views/AdminView.vue';
-import DashboardView from '../views/DashboardView.vue';
-import ForbiddenView from '../views/ForbiddenView.vue';
-import LoginView from '../views/LoginView.vue';
-import NotFoundView from '../views/NotFoundView.vue';
+
+const DashboardView = () => import('../views/DashboardView.vue');
+const AdminView = () => import('../views/AdminView.vue');
+const ForbiddenView = () => import('../views/ForbiddenView.vue');
+const LoginView = () => import('../views/LoginView.vue');
+const NotFoundView = () => import('../views/NotFoundView.vue');
 
 const routes: RouteRecordRaw[] = [
   {
@@ -53,9 +54,8 @@ const router = createRouter({
 router.beforeEach(async (to) => {
   const authStore = useAuthStore();
 
-  if (!authStore.bootstrapped && !authStore.bootstrapping) {
-    await authStore.bootstrap();
-  }
+  // bootstrap() has in-flight dedupe; always await to avoid guard races.
+  await authStore.bootstrap();
 
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     return {

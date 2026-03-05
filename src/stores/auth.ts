@@ -25,6 +25,8 @@ interface AuthState {
   sessionExpired: boolean;
 }
 
+let bootstrapInFlight: Promise<void> | null = null;
+
 function getInitialState(): AuthState {
   return {
     bootstrapped: false,
@@ -82,32 +84,49 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async bootstrap(): Promise<void> {
-      if (this.bootstrapping || this.bootstrapped) {
+      if (this.bootstrapped) {
         return;
       }
 
-      this.bootstrapping = true;
+      if (bootstrapInFlight) {
+        await bootstrapInFlight;
+        return;
+      }
 
-      try {
-        const profile = await getMyProfile({ skipAuthRefresh: true });
-        this.applyProfile(profile);
-      } catch (error) {
-        const authError = adaptAuthError(error);
+      bootstrapInFlight = (async () => {
+        if (this.bootstrapping || this.bootstrapped) {
+          return;
+        }
 
-        if (isUnauthenticatedErrorCode(authError.code)) {
-          try {
-            await this.refreshSession({ silent: true });
-            const profile = await getMyProfile({ skipAuthRefresh: true });
-            this.applyProfile(profile);
-          } catch {
+        this.bootstrapping = true;
+
+        try {
+          const profile = await getMyProfile({ skipAuthRefresh: true, dedupe: true });
+          this.applyProfile(profile);
+        } catch (error) {
+          const authError = adaptAuthError(error);
+
+          if (isUnauthenticatedErrorCode(authError.code)) {
+            try {
+              await this.refreshSession({ silent: true });
+              const profile = await getMyProfile({ skipAuthRefresh: true, dedupe: true });
+              this.applyProfile(profile);
+            } catch {
+              this.clearLocalSession();
+            }
+          } else {
             this.clearLocalSession();
           }
-        } else {
-          this.clearLocalSession();
+        } finally {
+          this.bootstrapping = false;
+          this.bootstrapped = true;
         }
+      })();
+
+      try {
+        await bootstrapInFlight;
       } finally {
-        this.bootstrapping = false;
-        this.bootstrapped = true;
+        bootstrapInFlight = null;
       }
     },
 
@@ -115,7 +134,7 @@ export const useAuthStore = defineStore('auth', {
       const loginResult = await loginRequest(credentials);
       this.setAccessToken(loginResult.accessToken, loginResult.expiresIn);
 
-      const profile = await getMyProfile({ skipAuthRefresh: true });
+      const profile = await getMyProfile({ skipAuthRefresh: true, dedupe: false });
       this.applyProfile(profile);
       this.bootstrapped = true;
       publishAuthEvent('login', { userId: this.user?.id });

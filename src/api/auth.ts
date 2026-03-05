@@ -6,6 +6,13 @@ interface LogoutResponse {
   success: boolean;
 }
 
+interface GetMyProfileOptions {
+  skipAuthRefresh?: boolean;
+  dedupe?: boolean;
+}
+
+let profileRequestInFlight: Promise<AuthProfile> | null = null;
+
 export async function loginRequest(credentials: LoginCredentials): Promise<TokenResponse> {
   try {
     const { data } = await authHttp.post<TokenResponse>('/auth/login', credentials, {
@@ -56,15 +63,31 @@ export async function logoutAllRequest(): Promise<LogoutResponse> {
   }
 }
 
-export async function getMyProfile(options: { skipAuthRefresh?: boolean } = {}): Promise<AuthProfile> {
-  const { skipAuthRefresh = false } = options;
+export async function getMyProfile(options: GetMyProfileOptions = {}): Promise<AuthProfile> {
+  const { skipAuthRefresh = false, dedupe = true } = options;
 
-  try {
-    const { data } = await http.get<AuthProfile>('/auth/me', {
-      skipAuthRefresh,
-    });
-    return data;
-  } catch (error) {
-    throw adaptAuthError(error);
+  if (dedupe && profileRequestInFlight) {
+    return profileRequestInFlight;
   }
+
+  const requestPromise = (async () => {
+    try {
+      const { data } = await http.get<AuthProfile>('/auth/me', {
+        skipAuthRefresh,
+      });
+      return data;
+    } catch (error) {
+      throw adaptAuthError(error);
+    }
+  })();
+
+  if (!dedupe) {
+    return requestPromise;
+  }
+
+  profileRequestInFlight = requestPromise.finally(() => {
+    profileRequestInFlight = null;
+  });
+
+  return profileRequestInFlight;
 }
