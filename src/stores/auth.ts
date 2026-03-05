@@ -6,9 +6,26 @@ import {
   logoutRequest,
   refreshRequest,
 } from '../api/auth';
+import {
+  adaptAuthError,
+  AuthErrorCode,
+  isUnauthenticatedErrorCode,
+} from '../errors/auth-error';
 import { publishAuthEvent } from '../composables/useAuthSync';
+import type { AuthProfile, AuthUser, LoginCredentials, LogoutOptions, RefreshOptions } from '../types/auth';
 
-function getInitialState() {
+interface AuthState {
+  bootstrapped: boolean;
+  bootstrapping: boolean;
+  accessToken: string | null;
+  tokenExpiresAt: number | null;
+  user: AuthUser | null;
+  roles: string[];
+  permissions: string[];
+  sessionExpired: boolean;
+}
+
+function getInitialState(): AuthState {
   return {
     bootstrapped: false,
     bootstrapping: false,
@@ -22,35 +39,37 @@ function getInitialState() {
 }
 
 export const useAuthStore = defineStore('auth', {
-  state: () => getInitialState(),
+  state: (): AuthState => getInitialState(),
 
   getters: {
-    isAuthenticated: (state) => Boolean(state.accessToken && state.user),
+    isAuthenticated: (state): boolean => Boolean(state.accessToken && state.user),
 
-    displayName: (state) => state.user?.name || state.user?.email || 'Unknown User',
+    displayName: (state): string => state.user?.name || state.user?.email || 'Unknown User',
 
-    hasPermission: (state) => (permission) => state.permissions.includes(permission),
+    hasPermission: (state) => (permission: string): boolean => state.permissions.includes(permission),
 
-    hasRole: (state) => (role) => state.roles.includes(role),
+    hasRole: (state) => (role: string): boolean => state.roles.includes(role),
 
-    hasAllPermissions: (state) => (requiredPermissions = []) =>
-      requiredPermissions.every((permission) => state.permissions.includes(permission)),
+    hasAllPermissions:
+      (state) =>
+      (requiredPermissions: string[] = []): boolean =>
+        requiredPermissions.every((permission) => state.permissions.includes(permission)),
   },
 
   actions: {
-    setAccessToken(accessToken, expiresIn = 900) {
+    setAccessToken(accessToken: string, expiresIn = 900): void {
       this.accessToken = accessToken;
       this.tokenExpiresAt = Date.now() + expiresIn * 1000;
     },
 
-    applyProfile(profile) {
+    applyProfile(profile: AuthProfile): void {
       this.user = profile.user || null;
       this.roles = Array.isArray(profile.roles) ? profile.roles : [];
       this.permissions = Array.isArray(profile.permissions) ? profile.permissions : [];
       this.sessionExpired = false;
     },
 
-    clearLocalSession() {
+    clearLocalSession(): void {
       this.accessToken = null;
       this.tokenExpiresAt = null;
       this.user = null;
@@ -58,11 +77,11 @@ export const useAuthStore = defineStore('auth', {
       this.permissions = [];
     },
 
-    markSessionExpired() {
+    markSessionExpired(): void {
       this.sessionExpired = true;
     },
 
-    async bootstrap() {
+    async bootstrap(): Promise<void> {
       if (this.bootstrapping || this.bootstrapped) {
         return;
       }
@@ -73,7 +92,9 @@ export const useAuthStore = defineStore('auth', {
         const profile = await getMyProfile({ skipAuthRefresh: true });
         this.applyProfile(profile);
       } catch (error) {
-        if (error.response?.status === 401) {
+        const authError = adaptAuthError(error);
+
+        if (isUnauthenticatedErrorCode(authError.code)) {
           try {
             await this.refreshSession({ silent: true });
             const profile = await getMyProfile({ skipAuthRefresh: true });
@@ -90,7 +111,7 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    async login(credentials) {
+    async login(credentials: LoginCredentials): Promise<void> {
       const loginResult = await loginRequest(credentials);
       this.setAccessToken(loginResult.accessToken, loginResult.expiresIn);
 
@@ -100,28 +121,29 @@ export const useAuthStore = defineStore('auth', {
       publishAuthEvent('login', { userId: this.user?.id });
     },
 
-    async refreshSession(options = {}) {
+    async refreshSession(options: RefreshOptions = {}): Promise<void> {
       const { silent = false } = options;
 
       try {
         const refreshResult = await refreshRequest();
         this.setAccessToken(refreshResult.accessToken, refreshResult.expiresIn);
         this.sessionExpired = false;
-        return refreshResult;
       } catch (error) {
+        const authError = adaptAuthError(error);
+
         this.clearLocalSession();
         this.bootstrapped = true;
 
-        if (!silent) {
+        if (!silent && isUnauthenticatedErrorCode(authError.code)) {
           this.sessionExpired = true;
           publishAuthEvent('session-expired');
         }
 
-        throw error;
+        throw authError;
       }
     },
 
-    async logout(options = {}) {
+    async logout(options: LogoutOptions = {}): Promise<void> {
       const { allDevices = false, broadcast = true } = options;
 
       try {
@@ -129,6 +151,11 @@ export const useAuthStore = defineStore('auth', {
           await logoutAllRequest();
         } else {
           await logoutRequest();
+        }
+      } catch (error) {
+        const authError = adaptAuthError(error);
+        if (authError.code !== AuthErrorCode.UNAUTHORIZED) {
+          throw authError;
         }
       } finally {
         this.clearLocalSession();
@@ -141,7 +168,7 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    handleExternalEvent(type) {
+    handleExternalEvent(type: string, _payload?: Record<string, unknown>): void {
       if (type === 'logout') {
         this.clearLocalSession();
         this.bootstrapped = true;

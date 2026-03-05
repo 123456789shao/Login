@@ -55,9 +55,10 @@
   </section>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { getAuthErrorMessage } from '../errors/auth-error';
 import { useAuthStore } from '../stores/auth';
 
 const router = useRouter();
@@ -75,7 +76,7 @@ const tokenExpiryText = computed(() => {
   return expiry.toLocaleString();
 });
 
-async function refreshNow() {
+async function refreshNow(): Promise<void> {
   if (refreshing.value) {
     return;
   }
@@ -86,14 +87,14 @@ async function refreshNow() {
   try {
     await authStore.refreshSession();
     feedback.value = 'Session refreshed successfully.';
-  } catch {
-    feedback.value = 'Refresh failed. Please sign in again.';
+  } catch (error) {
+    feedback.value = getAuthErrorMessage(error);
   } finally {
     refreshing.value = false;
   }
 }
 
-function goAdmin() {
+function goAdmin(): void {
   router.push('/admin');
 }
 </script>

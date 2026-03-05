@@ -1,7 +1,13 @@
+import type { AuthEvent } from '../types/auth';
+
 const CHANNEL_NAME = 'enterprise-auth-events';
 const STORAGE_KEY = '__enterprise_auth_event__';
 
-function createAuthEvent(type, payload = {}) {
+interface AuthSyncStoreLike {
+  handleExternalEvent(type: string, payload?: Record<string, unknown>): void;
+}
+
+function createAuthEvent(type: string, payload: Record<string, unknown> = {}): AuthEvent {
   return {
     type,
     payload,
@@ -9,7 +15,7 @@ function createAuthEvent(type, payload = {}) {
   };
 }
 
-export function publishAuthEvent(type, payload = {}) {
+export function publishAuthEvent(type: string, payload: Record<string, unknown> = {}): void {
   if (typeof window === 'undefined') {
     return;
   }
@@ -26,34 +32,35 @@ export function publishAuthEvent(type, payload = {}) {
   window.localStorage.removeItem(STORAGE_KEY);
 }
 
-export function setupAuthSync(authStore) {
+export function setupAuthSync(authStore: AuthSyncStoreLike): () => void {
   if (typeof window === 'undefined') {
     return () => {};
   }
 
-  let channel;
+  let channel: BroadcastChannel | undefined;
 
-  const onEvent = (event) => {
+  const onEvent = (event: Partial<AuthEvent> | null | undefined): void => {
     if (!event || !event.type) {
       return;
     }
+
     authStore.handleExternalEvent(event.type, event.payload);
   };
 
   if ('BroadcastChannel' in window) {
     channel = new BroadcastChannel(CHANNEL_NAME);
-    channel.addEventListener('message', (messageEvent) => {
+    channel.addEventListener('message', (messageEvent: MessageEvent<AuthEvent>) => {
       onEvent(messageEvent.data);
     });
   }
 
-  const onStorage = (storageEvent) => {
+  const onStorage = (storageEvent: StorageEvent): void => {
     if (storageEvent.key !== STORAGE_KEY || !storageEvent.newValue) {
       return;
     }
 
     try {
-      const event = JSON.parse(storageEvent.newValue);
+      const event = JSON.parse(storageEvent.newValue) as Partial<AuthEvent>;
       onEvent(event);
     } catch {
       // Ignore malformed events.

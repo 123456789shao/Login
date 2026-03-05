@@ -34,16 +34,18 @@
   </section>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { getAuthErrorMessage } from '../errors/auth-error';
 import { useAuthStore } from '../stores/auth';
+import type { LoginCredentials } from '../types/auth';
 
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
 
-const form = reactive({
+const form = reactive<LoginCredentials>({
   email: 'admin@corp.com',
   password: 'Admin@123',
 });
@@ -56,11 +58,7 @@ const redirectPath = computed(() => {
   return typeof raw === 'string' && raw.startsWith('/') ? raw : '/';
 });
 
-function getErrorMessage(error) {
-  return error.response?.data?.message || 'Sign in failed. Please check your credentials.';
-}
-
-async function submit() {
+async function submit(): Promise<void> {
   if (submitting.value) {
     return;
   }
@@ -70,9 +68,9 @@ async function submit() {
 
   try {
     await authStore.login({ ...form });
-    router.replace(redirectPath.value);
+    await router.replace(redirectPath.value);
   } catch (error) {
-    errorMessage.value = getErrorMessage(error);
+    errorMessage.value = getAuthErrorMessage(error);
   } finally {
     submitting.value = false;
   }

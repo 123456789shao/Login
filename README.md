@@ -6,11 +6,14 @@ A production-style Vue 3 authentication and authorization starter focused on rea
 - Access token + refresh token flow with retry queue on `401`
 - Route-level RBAC guards and UI-level `v-permission` directive
 - Multi-tab session synchronization (BroadcastChannel + storage fallback)
+- TypeScript-first auth core with strict type checking
+- Unified auth error-code adapter layer
 - Mock auth backend for full local demo
 
 ## Tech Stack
 
 - Vue 3 + Vite
+- TypeScript + vue-tsc
 - Pinia
 - Vue Router
 - Axios
@@ -40,12 +43,24 @@ src/
   api/            # HTTP clients and auth API wrappers
   composables/    # auth sync and permission helpers
   directives/     # v-permission
+  errors/         # unified auth error-code adapter
   router/         # route definitions + auth guard
   stores/         # Pinia auth state machine
+  types/          # shared TS interfaces and declarations
   views/          # login/dashboard/admin/403/404 pages
 mock/
   server.js       # local auth backend for demo
 ```
+
+## Unified Error Adapter
+
+`src/errors/auth-error.ts` normalizes backend and transport errors into stable frontend codes.
+
+- Backend code mapping: `INVALID_CREDENTIALS`, `TOKEN_EXPIRED`, `NO_REFRESH_TOKEN`, etc.
+- HTTP status fallback mapping: `401 -> UNAUTHORIZED`, `403 -> FORBIDDEN`, `5xx -> SERVER_ERROR`.
+- Network and timeout mapping: `NETWORK_ERROR`, `REQUEST_TIMEOUT`.
+
+This allows UI and stores to consume a stable error model rather than raw axios payload shapes.
 
 ## Auth Flow (Frontend)
 
@@ -58,7 +73,7 @@ mock/
 
 ## Route & Permission Strategy
 
-- Route access is enforced in `src/router/index.js` via `meta.requiresAuth` and `meta.permissions`.
+- Route access is enforced in `src/router/index.ts` via `meta.requiresAuth` and `meta.permissions`.
 - UI-level controls use `v-permission` for button/menu visibility.
 - Frontend permission checks are UX only; backend must still enforce authorization.
 
@@ -81,7 +96,7 @@ Suggested response fields:
 
 ## Integrating Into Existing Vue Projects
 
-1. Copy `src/api/http.js`, `src/api/auth.js`, and `src/stores/auth.js`.
+1. Copy `src/api/http.ts`, `src/api/auth.ts`, `src/stores/auth.ts`, and `src/errors/auth-error.ts`.
 2. Mount interceptors in app entry (`setupHttpInterceptors`).
 3. Add route guards using this project as reference.
 4. Add `v-permission` directive and optionally `usePermission` composable.
@@ -101,5 +116,6 @@ Before publishing:
 - `npm run dev`: run frontend only
 - `npm run mock`: run mock auth backend only
 - `npm run dev:full`: run both frontend and mock backend
-- `npm run build`: production build
+- `npm run typecheck`: run strict TS checks
+- `npm run build`: typecheck + production build
 - `npm run preview`: preview built app

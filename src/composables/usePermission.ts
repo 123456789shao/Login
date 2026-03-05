@@ -6,15 +6,15 @@ export function usePermission() {
 
   const permissions = computed(() => authStore.permissions);
 
-  function can(permission) {
+  function can(permission: string): boolean {
     return authStore.hasPermission(permission);
   }
 
-  function canAll(requiredPermissions = []) {
+  function canAll(requiredPermissions: string[] = []): boolean {
     return authStore.hasAllPermissions(requiredPermissions);
   }
 
-  function hasRole(role) {
+  function hasRole(role: string): boolean {
     return authStore.hasRole(role);
   }
 

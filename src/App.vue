@@ -26,7 +26,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from './stores/auth';
@@ -35,7 +35,7 @@ const router = useRouter();
 const authStore = useAuthStore();
 const appName = computed(() => import.meta.env.VITE_APP_NAME || 'Enterprise Auth Starter');
 
-async function logout(allDevices) {
+async function logout(allDevices: boolean): Promise<void> {
   await authStore.logout({ allDevices });
   router.push('/login');
 }
