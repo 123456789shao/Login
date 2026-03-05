@@ -1,3 +1,4 @@
+﻿/** 路由配置：使用懒加载页面，并接入登录态与权限守卫链路。 */
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 
@@ -54,7 +55,7 @@ const router = createRouter({
 router.beforeEach(async (to) => {
   const authStore = useAuthStore();
 
-  // bootstrap() has in-flight dedupe; always await to avoid guard races.
+  // bootstrap() 已做并发去重；此处统一 await，避免守卫竞态。
   await authStore.bootstrap();
 
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {

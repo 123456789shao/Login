@@ -1,4 +1,5 @@
-<template>
+﻿<template>
+  <!-- 管理页：用于演示路由级 RBAC 权限保护。 -->
   <section class="panel admin-panel">
     <p class="tag">RESTRICTED AREA</p>
     <h1>Admin Center</h1>

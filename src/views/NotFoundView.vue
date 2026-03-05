@@ -1,4 +1,5 @@
-<template>
+﻿<template>
+  <!-- 404 页面：未匹配到路由时展示。 -->
   <section class="panel state-card">
     <p class="state-code">404</p>
     <h1>Page Not Found</h1>

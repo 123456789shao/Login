@@ -1,3 +1,4 @@
+﻿/** Vite 配置：包含开发代理与手动分包策略。 */
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 

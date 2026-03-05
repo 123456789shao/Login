@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <section class="dashboard-grid">
     <article class="panel card">
       <h2>Session Overview</h2>
@@ -56,6 +56,7 @@
 </template>
 
 <script setup lang="ts">
+// 仪表盘页：展示会话信息、手动刷新，并演示权限控制按钮。
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { getAuthErrorMessage } from '../errors/auth-error';

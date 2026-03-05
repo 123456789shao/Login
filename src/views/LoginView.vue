@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <section class="login-page">
     <div class="login-card panel">
       <p class="kicker">ENTERPRISE ACCESS</p>
@@ -35,6 +35,7 @@
 </template>
 
 <script setup lang="ts">
+// 登录页：提交凭据、处理登录后跳转，并展示统一错误提示。
 import { computed, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { getAuthErrorMessage } from '../errors/auth-error';

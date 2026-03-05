@@ -1,3 +1,4 @@
+﻿/** 应用入口：初始化 Pinia、鉴权能力与路由，并挂载 Vue 应用。 */
 import { createApp } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import App from './App.vue';

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="app-shell">
     <header v-if="authStore.isAuthenticated" class="topbar">
       <div class="brand">
@@ -27,6 +27,7 @@
 </template>
 
 <script setup lang="ts">
+// 应用外壳：顶部导航、全局会话提示与退出操作。
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from './stores/auth';

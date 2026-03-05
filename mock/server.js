@@ -1,3 +1,4 @@
+﻿/** Mock 鉴权后端：用于本地端到端演示与前端联调。 */
 import crypto from 'node:crypto';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
@@ -217,7 +218,7 @@ app.post('/api/auth/refresh', (req, res) => {
     return res.status(401).json({ code: 'REFRESH_EXPIRED', message: 'Refresh token expired.' });
   }
 
-  // Rotate refresh token to limit replay risk.
+  // 轮换 refresh token，降低令牌重放风险。
   revokeRefreshToken(currentRefreshToken);
   const rotatedRefreshToken = issueRefreshToken(session.userId, session.sessionGroup);
   const newAccessToken = issueAccessToken(session.userId);

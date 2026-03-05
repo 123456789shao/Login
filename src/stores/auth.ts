@@ -1,3 +1,4 @@
+﻿/** 鉴权状态仓库：管理启动校验、登录、刷新、登出等会话生命周期。 */
 import { defineStore } from 'pinia';
 import {
   getMyProfile,

@@ -1,3 +1,4 @@
+﻿/** 统一鉴权错误适配层：将后端错误、状态码与网络异常归一为稳定错误码。 */
 import axios from 'axios';
 
 export enum AuthErrorCode {

@@ -1,3 +1,4 @@
+﻿/** 权限组合函数：为组件提供角色与权限判断能力。 */
 import { computed } from 'vue';
 import { useAuthStore } from '../stores/auth';
 

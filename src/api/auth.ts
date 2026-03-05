@@ -1,3 +1,4 @@
+﻿/** 鉴权接口适配层：封装登录/刷新/登出/用户信息请求，并做请求并发去重。 */
 import { adaptAuthError } from '../errors/auth-error';
 import type { AuthProfile, LoginCredentials, TokenResponse } from '../types/auth';
 import { authHttp, http } from './http';

@@ -1,4 +1,5 @@
-<template>
+﻿<template>
+  <!-- 403 页面：已登录但权限不足时展示。 -->
   <section class="panel state-card">
     <p class="state-code">403</p>
     <h1>Access Denied</h1>

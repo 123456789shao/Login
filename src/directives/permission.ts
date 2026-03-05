@@ -1,3 +1,4 @@
+﻿/** v-permission 指令：当用户缺少权限时隐藏对应 UI 元素。 */
 import type { App } from 'vue';
 
 interface PermissionStoreLike {

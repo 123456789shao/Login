@@ -1,3 +1,4 @@
+﻿/** 多标签页鉴权同步：通过 BroadcastChannel 与 storage 事件同步登录态。 */
 import type { AuthEvent } from '../types/auth';
 
 const CHANNEL_NAME = 'enterprise-auth-events';
@@ -63,7 +64,7 @@ export function setupAuthSync(authStore: AuthSyncStoreLike): () => void {
       const event = JSON.parse(storageEvent.newValue) as Partial<AuthEvent>;
       onEvent(event);
     } catch {
-      // Ignore malformed events.
+      // 忽略格式异常的同步事件。
     }
   };
 

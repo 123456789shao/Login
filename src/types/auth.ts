@@ -1,3 +1,4 @@
+﻿/** 鉴权领域共享类型：在 API、store 与页面层复用的类型定义。 */
 export interface AuthUser {
   id: string;
   email: string;
